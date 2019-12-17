@@ -12,6 +12,7 @@ namespace ReductionFichierTexte
 {
     class Program
     {
+
         public static void reduireFichier(string fichier_source, int ratio, string fichier_cible)
         {
             try

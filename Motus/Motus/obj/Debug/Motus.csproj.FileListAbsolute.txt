@@ -1,1 +1,6 @@
 E:\IPROG\Motus\Motus\bin\Debug\Motus.exe.config
+E:\IPROG\Motus\Motus\bin\Debug\Motus.exe
+E:\IPROG\Motus\Motus\bin\Debug\Motus.pdb
+E:\IPROG\Motus\Motus\obj\Debug\Motus.exe
+E:\IPROG\Motus\Motus\obj\Debug\Motus.pdb
+E:\IPROG\Motus\Motus\obj\Debug\Motus.csprojResolveAssemblyReference.cache

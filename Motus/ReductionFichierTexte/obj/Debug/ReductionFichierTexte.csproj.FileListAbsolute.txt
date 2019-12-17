@@ -1,0 +1,6 @@
+E:\IPROG\Motus\ReductionFichierTexte\bin\Debug\ReductionFichierTexte.exe.config
+E:\IPROG\Motus\ReductionFichierTexte\bin\Debug\ReductionFichierTexte.exe
+E:\IPROG\Motus\ReductionFichierTexte\bin\Debug\ReductionFichierTexte.pdb
+E:\IPROG\Motus\ReductionFichierTexte\obj\Debug\ReductionFichierTexte.csprojResolveAssemblyReference.cache
+E:\IPROG\Motus\ReductionFichierTexte\obj\Debug\ReductionFichierTexte.exe
+E:\IPROG\Motus\ReductionFichierTexte\obj\Debug\ReductionFichierTexte.pdb
