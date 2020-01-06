@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Motus
 {
@@ -20,64 +21,96 @@ namespace Motus
 
 
             // MENU HERE -TODO
-            // Nouvelle Partie
-
-            // Statistiques
-
-            // Options
-
-            // Quitter
-
+            Menu();
+            
             // TODO : clear la console quand on change de "page"
 
-            InstanciationPartie();
+            
             Console.ReadKey();
 
         }
         
-        
+        public static void Menu()
+        {
+            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("                  MENU                    ");
+            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("1: Nouvelle partie \n2: Statistiques \n3:Options \n4:Quitter");
+            int caseSwitch = int.Parse(Console.ReadLine());
 
+            switch (caseSwitch)
+            {
+                case 1: // Nouvelle Partie
+                    InstanciationPartie();
+                    break;
+                case 2: // Statistiques
+
+                    break;
+                case 3: // Options
+
+                    break;
+                case 4: // Quitter
+                    QuitterJeu();
+
+                    break;
+            }
+        }
+
+        // --------------- Nouvelle Partie-------------------------------- //
         public static void InstanciationPartie()
         {
-
+            Console.Clear();
             string fichierSource = "dico_fr.txt";
             string fichierCible = "dico_reduit.txt";
 
             int tailleMot = 0;
-
-            
             // Demande de la taille du mot
             do
             {
                 Console.WriteLine("Entrer une taille de mot à deviner entre 6 et 10");
                 tailleMot = int.Parse(Console.ReadLine());
             }
-            while (tailleMot < 5 && tailleMot > 11);
+            while (tailleMot < 6 || tailleMot > 10);
 
             // Création du fichier avec seulement des mots de la taille demandée
             reduireFichier(fichierSource, tailleMot, fichierCible);
 
-            Console.WriteLine("Réduction terminée."); // A SUPPRIMER 
 
+            // Nb de tentatives = nb de lignes du tableau
             Console.WriteLine("Entrer le nombre de tentatives autorisées");
             int nbTentatives = int.Parse(Console.ReadLine());
 
+            // Pour parametrer un temps pour proposer un mot
             Console.WriteLine("Souhaitez-vous mettre un temps limité pour proposer un mot? O/N");
             string temp = Console.ReadLine();
             temp = temp.ToUpper(); //Normalisation de la chaine
 
-            int tempsTour = 0;
+            TimeSpan tempsTour = new TimeSpan();
 
+            // Cas où on veut un chrono pour chaque proposition de mot
             if (temp.Equals("O"))
             {
+                int seconde = 0;
                 do
                 {
                     Console.WriteLine("Entrer un temps compris entre 5 et 60 secondes : ");
-                    tempsTour = int.Parse(Console.ReadLine());
+                    tempsTour = TimeSpan.FromSeconds(int.Parse(Console.ReadLine()));
+
+                    // Creation d'une variable temporaire seconde pour faire une verification avec un int
+                    seconde = tempsTour.Seconds;
+                    Console.WriteLine(tempsTour);
                 }
-                while (tempsTour < 4 && tailleMot > 61);
+                
+                while (seconde < 4 && seconde > 61);
+            }
+            // Cas où on ne souhaite pas avoir de limite de temps pour proposer un mot
+            else
+            {
+                // .FromDays(1) pour mettre une "limite" de temps a un jour
+                tempsTour = TimeSpan.FromDays(1);
             }
 
+            
             char[,] grille = new char[nbTentatives, tailleMot];
 
             // Remplit la grille de caractères espaces pour la verification des cases
@@ -96,8 +129,9 @@ namespace Motus
 
         }
 
-        public static void JouerPartie(char[,] grille, int tempsTour, string fichierCible, int[,] grilleCouleur)
+        public static void JouerPartie(char[,] grille, TimeSpan tempsTour, string fichierCible, int[,] grilleCouleur)
         {
+            Console.Clear();
             //Générer le mot random du dico
             string motInitial = GenerateurMotAleatoire(fichierCible);
             Console.WriteLine(motInitial);
@@ -112,32 +146,43 @@ namespace Motus
             bool finPartie = false;
             bool partieGagne = false;
 
+            // Start chronometre total d'une partie
+            System.Diagnostics.Stopwatch tpsTotal = new System.Diagnostics.Stopwatch();
+            tpsTotal.Start();
+
+
             while (!finPartie)
             {
-                partieGagne= JouerTour(grille, tempsTour, grilleCouleur, motInitial);
+                partieGagne = JouerTour(grille, tempsTour, grilleCouleur, motInitial);
                 if(partieGagne)
                 {
                     finPartie = partieGagne;
                 }
-                else if(!grille[grille.GetLength(0), 2].Equals('.'))
+                else if(!grille[grille.GetLength(0)-1, 2].Equals('.'))
                 {
                     finPartie = true;
                 }
                 AffichageGrille(grille, grilleCouleur);
             }
+            // Arret du chronomètre total d'une partie
+            tpsTotal.Stop();
+            TimeSpan ts = tpsTotal.Elapsed;
 
             // Affichage de fin
-           FinDePartie(partieGagne, motInitial);
+            FinDePartie(partieGagne, motInitial, ts);
+
 
 
         }
 
         // Jouer un tour
-        public static bool JouerTour(char[,] grille, int tempsTour, int[,] grilleCouleur, string motInitial)
+        public static bool JouerTour(char[,] grille, TimeSpan tempsTour, int[,] grilleCouleur, string motInitial)
         {
-            bool PartieGagné = false;
             string motPropose = "";
             int tourActuel = 0;
+            // Début du chrono pour proposer un mot
+            System.Diagnostics.Stopwatch tpsTour = new System.Diagnostics.Stopwatch();
+            tpsTour.Start();
 
             // Demande du mot
             while (motPropose.Length != grille.GetLength(1))
@@ -147,8 +192,26 @@ namespace Motus
                 motPropose = motPropose.ToUpper();
             }
 
+            // Arret du chronomètre total d'une partie
+            tpsTour.Stop();
+            TimeSpan ts = tpsTour.Elapsed;
+
+            // Cas ou le temps mis pour proposer un mot a dépassé celui parametré
+            if(ts.Seconds >= tempsTour.Seconds && tempsTour.Seconds != 0)
+            {
+                Console.WriteLine("Temps imparti dépassé, votre proposition n'a pas été retenue");
+                // reset du motPropose
+
+                motPropose = "";
+                // remplacer le mot proposé par des etoiles pour simuler un échec
+                for (int i = 0; i < grille.GetLength(1); i++)
+                {
+                    motPropose += "*";
+                }
+            }
+
             // Pour savoir a quelle ligne / tentative on est et où il faut ajouter le mot dans la grille
-            for(tourActuel = 0; tourActuel < grille.GetLength(0); tourActuel++)
+            for (tourActuel = 0; tourActuel < grille.GetLength(0); tourActuel++)
             {
                 if (grille[tourActuel, 2].Equals('.'))
                 {
@@ -225,14 +288,12 @@ namespace Motus
             
         }
 
-
         // Retourne un mot aléatoire du dico réduit
         public static string GenerateurMotAleatoire(string fichierCible)
         {
             string mot = "";
             try
             {
-                Console.WriteLine("Debut generation ");
                 // Création d'une instance de StreamReader pour permettre la lecture de notre fichier cible 
                 System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
                 //Premier reader
@@ -283,20 +344,37 @@ namespace Motus
             return mot.ToUpper();
         }
 
+        // Affichage du temps
+        public static void AffichageTemps(TimeSpan ts)
+        {
+            string tempsEcoule = String.Format("{0:00}:{1:00}:{2:00}:{3:00}",
+            ts.Hours, ts.Minutes, ts.Seconds,
+            ts.Milliseconds / 10);
+            Console.WriteLine("Temps de jeu : " + tempsEcoule);
+        }
 
         // Affichage de fin
-        public static void FinDePartie(bool partieGagne, string motInitial)
+        public static void FinDePartie(bool partieGagne, string motInitial, TimeSpan ts)
         {
+            // Reset du background
+            Console.BackgroundColor = ConsoleColor.Black;
+
             // Cas victorieux
-            if(partieGagne)
+            if (partieGagne)
             {
-                Console.WriteLine("Bravo, vous avez gagné la partie!");
+                Console.WriteLine("\nBravo, vous avez gagné la partie!");
             }
-            else //t'as perdu loser
+            else // Défaite
             {
-                Console.WriteLine("Tu feras mieux la prochaine fois!");
+                Console.WriteLine("\nTu feras mieux la prochaine fois!");
                 Console.WriteLine("Le mot a deviné était : " + motInitial);
             }
+
+            // Affichage du temps de la partie
+            AffichageTemps(ts);
+
+            // Sauvegarde de la partie
+            Sauvegarder(motInitial, ts, partieGagne);
 
             // Demande de rejouer
             Console.WriteLine("Souhaitez-vous rejouer? O/N");
@@ -308,7 +386,7 @@ namespace Motus
             }
             else
             {
-                // revenir au menu
+                Menu();
             }
 
         }
@@ -351,7 +429,60 @@ namespace Motus
           
         }
 
-        
+        // ------------------------ Statistiques ------------------ //
+
+        // Génération d'un score avec la longueur du mot, le tps de la partie total, le nb de tentatives, ABANDON
+        public static void GenerationScore()
+        {
+
+        }
+
+        // Création d'un fichier de sauvegarde de la partie
+        public static void Sauvegarder(string motIni, TimeSpan tempsPartie, bool partieGagne)
+        {
+            try
+            {
+                // Demande a l'utilisateur d'entrer un nom de sauvegarde pour lui
+                Console.WriteLine("Entrer un nom de Joueur :");
+                string nomJoueur = Console.ReadLine();
+
+                                                                                                // TODO : verif que le fichier existe
+                                                                                                // if not, créer le fichier + la légende du début
+
+                // Création d'une instance de StreamWriter pour permettre l'ecriture de notre fichier cible
+                StreamWriter monStreamWriter = File.AppendText("sauvegarde.txt");
+                
+                // On écrit dans le fichier les données de la dernière partie
+                monStreamWriter.WriteLine("{0} ; {1} ; {2} ; {3} ", nomJoueur, partieGagne, motIni, tempsPartie.ToString());
+                
+                // Fermeture du StreamWriter (attention très important) 
+                monStreamWriter.Close();
+            }
+            catch (Exception ex)
+            {
+                // Code exécuté en cas d'exception 
+                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.WriteLine(ex.Message);
+            }
+            
+        }
+
+
+        // ------------------------- Quitter le jeu ------------------ //
+        static void QuitterJeu()
+        {
+            Console.WriteLine("Voulez-vous vraiment quitter le jeu? O/N");
+            string temp = Console.ReadLine();
+            temp = temp.ToUpper();
+            if(temp.Equals("O"))
+            {
+                Environment.Exit(0);
+            }
+            else
+            {
+                Menu();
+            }
+        }
 
         // Enleve tous les accents 
         static string RemoveDiacritics(string text)
