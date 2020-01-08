@@ -19,6 +19,8 @@ namespace Motus
             Console.WriteLine("------------------------------------------");
             Console.WriteLine("\nBy Coline BINET et Alban PERRIER G1 1A ENSC");
 
+            // Joueur le son du début
+            // JouerUnSon(@"E:\IPROG\Music\generique_intro.wav");
 
             // MENU 
             AfficherMenu();
@@ -371,6 +373,7 @@ namespace Motus
             if (partieGagne)
             {
                 Console.WriteLine("\nBravo, vous avez gagné la partie!");
+                JouerUnSon(@"E:\IPROG\Music\motus_mot_trouve.wav");
             }
             else // Défaite
             {
@@ -470,9 +473,28 @@ namespace Motus
                 Console.Write("Une erreur est survenue au cours de l'opération :");
                 Console.WriteLine(ex.Message);
             }
-            
+
         }
 
+         // ----------------------------------------------------------------------------------- Options ----------------------------------------------------------------------------------- //
+         public static void JouerUnSon(string chemin)
+        {
+            // Creation de l'objet SoundPlayer
+            System.Media.SoundPlayer s = new System.Media.SoundPlayer();
+
+            // Pour donner la localisation du fichier son 
+            s.SoundLocation = chemin;
+
+            // Play looping
+            // s.PlayLooping();
+
+            // Play normal
+            s.Play();
+
+            // Stop 
+            // s.Stop();
+
+        }
 
         // -------------------------------------------------------------------------------- Quitter le jeu -------------------------------------------------------------------------------- //
         static void QuitterJeu()
