@@ -20,28 +20,28 @@ namespace Motus
             Console.WriteLine("\nBy Coline BINET et Alban PERRIER G1 1A ENSC");
 
 
-            // MENU HERE -TODO
-            Menu();
-            
-            // TODO : clear la console quand on change de "page"
+            // MENU 
+            AfficherMenu();
 
-            
             Console.ReadKey();
 
         }
         
-        public static void Menu()
+        // Affichage du menu et permet d'appeler la fonction correspondant à ce que l'utilisateur choisi
+        public static void AfficherMenu()
         {
             Console.WriteLine("------------------------------------------");
             Console.WriteLine("                  MENU                    ");
             Console.WriteLine("------------------------------------------");
             Console.WriteLine("1: Nouvelle partie \n2: Statistiques \n3:Options \n4:Quitter");
+
             int caseSwitch = int.Parse(Console.ReadLine());
 
+            // Permet d'appeler fonction permettant de réaliser l'action que l'utilisateur souhaite
             switch (caseSwitch)
             {
                 case 1: // Nouvelle Partie
-                    InstanciationPartie();
+                    InstancierPartie();
                     break;
                 case 2: // Statistiques
 
@@ -56,8 +56,9 @@ namespace Motus
             }
         }
 
-        // --------------- Nouvelle Partie-------------------------------- //
-        public static void InstanciationPartie()
+        // ---------------------------------------------------------------------------------- Nouvelle Partie---------------------------------------------------------------------------------- //
+        // Initialise la partie en donnant le nom des dicos utilisés et demandant à l'utilisateur les paramètres de jeu pour la partie
+        public static void InstancierPartie()
         {
             Console.Clear();
             string fichierSource = "dico_fr.txt";
@@ -82,7 +83,7 @@ namespace Motus
 
             // Pour parametrer un temps pour proposer un mot
             Console.WriteLine("Souhaitez-vous mettre un temps limité pour proposer un mot? O/N");
-            string temp = Console.ReadLine();
+            string temp = Console.ReadLine(); // variable temporaire
             temp = temp.ToUpper(); //Normalisation de la chaine
 
             TimeSpan tempsTour = new TimeSpan();
@@ -101,7 +102,7 @@ namespace Motus
                     Console.WriteLine(tempsTour);
                 }
                 
-                while (seconde < 4 && seconde > 61);
+                while (seconde < 4 && seconde > 61); // verification de la donnée saisie par l'utilisateur
             }
             // Cas où on ne souhaite pas avoir de limite de temps pour proposer un mot
             else
@@ -110,10 +111,10 @@ namespace Motus
                 tempsTour = TimeSpan.FromDays(1);
             }
 
-            
+            // création de la grille de jeu
             char[,] grille = new char[nbTentatives, tailleMot];
 
-            // Remplit la grille de caractères espaces pour la verification des cases
+            // Remplit la grille de caractères '.' pour la verification des cases, correspondant à des cases encore "vide" pour le jeu
             for(int i = 0; i < grille.GetLength(0); i++)
             {
                 for (int j = 0; j < grille.GetLength(1); j++)
@@ -125,24 +126,29 @@ namespace Motus
             // grille pour connaitre la couleur a afficher selon la validité de la lettre
             int [,] grilleCouleur = new int[nbTentatives, tailleMot];
 
+            // Appel de la fonction JouerPartie pour débuter une action
             JouerPartie(grille, tempsTour, fichierCible, grilleCouleur);
 
         }
 
+        // Fonction permettant de créer le mot utilisé pour la partie, initialise le chrono pour la partie et vérifie si la partie est terminée (gagnée ou perdue)
         public static void JouerPartie(char[,] grille, TimeSpan tempsTour, string fichierCible, int[,] grilleCouleur)
         {
+            // Clear de la console pour des raisons esthétiques
             Console.Clear();
+
             //Générer le mot random du dico
-            string motInitial = GenerateurMotAleatoire(fichierCible);
+            string motInitial = GenererMotAleatoire(fichierCible);
             Console.WriteLine(motInitial);
+
             // Ajout de la lettre connue (première lettre) du mot a la grille sur la 1ère ligne
             grille[0, 0] = motInitial[0];
             grilleCouleur[0, 0] = 1;
 
-            //Affichage de grille
-            AffichageGrille(grille, grilleCouleur);
+            //Affichage de la grille pour débuter la partie
+            AfficherGrille(grille, grilleCouleur);
 
-            // Appel a jouer tour
+            // Variable pour vérifier si la partie est terminée et/ou gagnée
             bool finPartie = false;
             bool partieGagne = false;
 
@@ -150,41 +156,46 @@ namespace Motus
             System.Diagnostics.Stopwatch tpsTotal = new System.Diagnostics.Stopwatch();
             tpsTotal.Start();
 
-
+            // Boucle qui va permettre de jouer un tour tant que la partie n'est pas terminée
             while (!finPartie)
             {
+                // Appel à la fonction JouerTour pour savoir si la partie est gagnée ou pas
                 partieGagne = JouerTour(grille, tempsTour, grilleCouleur, motInitial);
+
+                // Si la partie est gagnée
                 if(partieGagne)
                 {
-                    finPartie = partieGagne;
+                    finPartie = partieGagne; // Alors la partie est terminée
                 }
+                // Sinon, on vérifie si le nombre de tentatives autorisées n'est pas dépassées
                 else if(!grille[grille.GetLength(0)-1, 2].Equals('.'))
                 {
-                    finPartie = true;
+                    finPartie = true; // Si oui, la partie est aussi terminée
                 }
-                AffichageGrille(grille, grilleCouleur);
+                // Affichage de la grille après avoir jouer un tour = proposer un mot
+                AfficherGrille(grille, grilleCouleur);
             }
+
             // Arret du chronomètre total d'une partie
             tpsTotal.Stop();
             TimeSpan ts = tpsTotal.Elapsed;
 
             // Affichage de fin
-            FinDePartie(partieGagne, motInitial, ts);
-
-
-
+            AfficherFinDePartie(partieGagne, motInitial, ts);
+            
         }
 
-        // Jouer un tour
+        // Fonction pour jouer un tour = proposer un mot + le vérifier
         public static bool JouerTour(char[,] grille, TimeSpan tempsTour, int[,] grilleCouleur, string motInitial)
         {
             string motPropose = "";
             int tourActuel = 0;
+
             // Début du chrono pour proposer un mot
             System.Diagnostics.Stopwatch tpsTour = new System.Diagnostics.Stopwatch();
             tpsTour.Start();
 
-            // Demande du mot
+            // Demande du mot en vérifiant qu'il soit correct à ce que l'on attends
             while (motPropose.Length != grille.GetLength(1))
             {
                 Console.WriteLine("\nEntrer votre proposition de mot");
@@ -192,7 +203,7 @@ namespace Motus
                 motPropose = motPropose.ToUpper();
             }
 
-            // Arret du chronomètre total d'une partie
+            // Arret du chronomètre pour la propostion du mot
             tpsTour.Stop();
             TimeSpan ts = tpsTour.Elapsed;
 
@@ -203,7 +214,7 @@ namespace Motus
                 // reset du motPropose
 
                 motPropose = "";
-                // remplacer le mot proposé par des etoiles pour simuler un échec
+                // remplace le mot proposé par des etoiles pour simuler un échec
                 for (int i = 0; i < grille.GetLength(1); i++)
                 {
                     motPropose += "*";
@@ -219,27 +230,25 @@ namespace Motus
                 }
             }
 
-            // rajouter le mot dans la grille
+            // Rajoute le mot dans la grille
             for (int i = 0; i < grille.GetLength(1); i++)
             {
                     grille[tourActuel, i] = motPropose[i];
             }
 
-            return VerificationMot(motInitial, motPropose, tourActuel, grilleCouleur);
-
-            
-            
+            // On retourne le résultat (boolean) de la fonction VerifierMot qui determinera si le mot proposer est le bon ou nom
+            return VerifierMot(motInitial, motPropose, tourActuel, grilleCouleur);
         }
 
-        // Check si le mot entré correspond au mot initial
-        public static bool VerificationMot(string motInitial, string motPropose, int tourActuel, int [,] grilleCouleur)
+        // Vérifie si le mot entré correspond au mot initial + remplis la grilleCouleur selon l'exactitude du mot propose
+        public static bool VerifierMot(string motInitial, string motPropose, int tourActuel, int [,] grilleCouleur)
         {
-
             bool gagne = false;
-            // Check si le mot est parfaitement égal
+
+            // Vérifie si le mot est parfaitement égal
             if (motInitial.Equals(motPropose))
             {
-                // mettre grille couleur a 1
+                // mettre grille couleur a 1 = toutes les lettres sont bonnes
                 for (int i = 0; i < grilleCouleur.GetLength(1); i++)
                 {
                     grilleCouleur[tourActuel, i] = 1;
@@ -247,28 +256,29 @@ namespace Motus
                 }
                 gagne = true;
             }
-
-
+            
             else
             {
+                // Parcours la grille de couleur
                 for (int i = 0; i < grilleCouleur.GetLength(1); i++)
                 {
-                    // Check si des lettres sont bien placées
+                    // Vérifie si des lettres sont bien placées
                     if (motPropose[i].Equals(motInitial[i]))
                     {
-                        grilleCouleur[tourActuel, i] = 1;
+                        grilleCouleur[tourActuel, i] = 1; // remplit à 1 (= lettre bien placée) si la lettre où l'on se situe est bien placee
                     }
-                    // Check si mal placée --> 
+                    // Vérifie si une lettre est mal placée, mais présente dans le mot initial 
                     else
                     {
                         int j = i;
                         bool bonneLettre = false;
+                        // Parcours du mot propose tant qu'on ne trouve pas de lettre presente dans le mot initial
                         while((!bonneLettre) && (j < grilleCouleur.GetLength(1)))
                         {
                             // lettre présente
                             if (motPropose[i].Equals(motInitial[j]))
                             {
-                                grilleCouleur[tourActuel, i] = 2;
+                                grilleCouleur[tourActuel, i] = 2; // remplit la grille couleur à cette position pour indiquer que la lettre est présente mais mal placee
                                 bonneLettre = true;
                             }
                             j++;
@@ -278,18 +288,18 @@ namespace Motus
                     // Lettres pas présente
                     if (grilleCouleur[tourActuel, i] == 0)
                     {
-                        grilleCouleur[tourActuel, i] = -1;
+                        grilleCouleur[tourActuel, i] = -1; // remplissage de la grille Couleur à cette position pour indiquer que la lettre n'est pas présente
                     }
                 }
 
             }
 
-            return gagne;
+            return gagne; // Retourne la valeur de la variable gagne qui est mise a "true" dans le cas ou toutes les lettres du mot propose sont bonnes
             
         }
 
-        // Retourne un mot aléatoire du dico réduit
-        public static string GenerateurMotAleatoire(string fichierCible)
+        // Retourne un mot aléatoire du dico reduit (et donc ne contenant que des mots de x lettres choisies par l'utilisateur)
+        public static string GenererMotAleatoire(string fichierCible) 
         {
             string mot = "";
             try
@@ -306,7 +316,7 @@ namespace Motus
 
                 int nbMots = 0;
                 
-                // Nb de mots du fichier
+                // Parcours pour connaitre le nb de mots du fichier
                 while (mot != null)
                 {
                     mot = monStreamReader.ReadLine();
@@ -321,14 +331,14 @@ namespace Motus
                 
                 nbMots = 0;
 
-                // Parcours du dico pour trouver le mot correspondant a la ligne aléatoire chosie
+                // Parcours du dico pour trouver le mot correspondant a la ligne aléatoire "choisie"
                 while (nbMots != random)
                 {
                     mot = monStreamReader2.ReadLine();
                     nbMots++;
                 }
                 
-                // Fermeture du StreamReader (attention très important) 
+                // Fermeture du StreamReader 
                 monStreamReader.Close();
                 monStreamReader2.Close();
 
@@ -341,22 +351,20 @@ namespace Motus
                 Console.WriteLine(ex.Message);
             }
 
-            return mot.ToUpper();
+            return mot.ToUpper(); // retourne le mot choisie en majuscule (pour l'affichage et la standardisation)
         }
 
         // Affichage du temps
-        public static void AffichageTemps(TimeSpan ts)
+        public static void AfficherTemps(TimeSpan ts)
         {
-            string tempsEcoule = String.Format("{0:00}:{1:00}:{2:00}:{3:00}",
-            ts.Hours, ts.Minutes, ts.Seconds,
-            ts.Milliseconds / 10);
+            string tempsEcoule = String.Format("{0:00}:{1:00}:{2:00}:{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10); // permet de changer le format pour standardiser l'affichage
             Console.WriteLine("Temps de jeu : " + tempsEcoule);
         }
 
-        // Affichage de fin
-        public static void FinDePartie(bool partieGagne, string motInitial, TimeSpan ts)
+        // Affichage de fin de partie
+        public static void AfficherFinDePartie(bool partieGagne, string motInitial, TimeSpan ts)
         {
-            // Reset du background
+            // Reset du background pour l'ecriture
             Console.BackgroundColor = ConsoleColor.Black;
 
             // Cas victorieux
@@ -371,7 +379,7 @@ namespace Motus
             }
 
             // Affichage du temps de la partie
-            AffichageTemps(ts);
+            AfficherTemps(ts);
 
             // Sauvegarde de la partie
             Sauvegarder(motInitial, ts, partieGagne);
@@ -382,29 +390,27 @@ namespace Motus
 
             if (rejouer.Equals("O"))
             {
-                InstanciationPartie();
+                InstancierPartie(); // Appel de InstancerPartie() pour recommencer
             }
             else
             {
-                Menu();
+                AfficherMenu(); // Retour au menu
             }
 
         }
 
-        public static void AffichageGrille(char[,] grille, int[,] grilleCouleur)
+        // Affichage de la grille 
+        public static void AfficherGrille(char[,] grille, int[,] grilleCouleur)
         {
+            // Parcours du contenu du tableau grille
             for (int i = 0; i < grille.GetLength(0); i++)
             {
-                /*Console.Write("\n");
-                for (int l = 0; l < grille.GetLength(1); l++)
-                {
-                    Console.Write(".---");
-                }*/
                 Console.Write("\n");
                 for (int j = 0; j < grille.GetLength(1); j++)
                 {
                     int caseSwitch = grilleCouleur[i,j];
 
+                    // Pour colorier la case selon les précedentes (ou pas) propositions de mots
                     switch (caseSwitch)
                     {
                         case 1: // lettre bien placée = rouge
@@ -416,7 +422,7 @@ namespace Motus
                         case -1: // lettre non présente = bleue
                             Console.BackgroundColor = ConsoleColor.Blue;
                             break;
-                        case 0: // pas de char, donc pas de couleur
+                        case 0: // cas ou aucune proposition n'a encore ete faite, donc pas de couleur
                             Console.BackgroundColor = ConsoleColor.Black;
                             break;
                     }
@@ -429,15 +435,15 @@ namespace Motus
           
         }
 
-        // ------------------------ Statistiques ------------------ //
+        // -------------------------------------------------------------------------------- Statistiques -------------------------------------------------------------------------------- //
 
-        // Génération d'un score avec la longueur du mot, le tps de la partie total, le nb de tentatives, ABANDON
+        // Génération d'un score avec la longueur du mot, le tps de la partie total, le nb de tentatives,                                  ABANDON // TODOOOOOO
         public static void GenerationScore()
         {
 
         }
 
-        // Création d'un fichier de sauvegarde de la partie
+        // Création d'un fichier de sauvegarde de la partie --> se situe dans /bin/Debug
         public static void Sauvegarder(string motIni, TimeSpan tempsPartie, bool partieGagne)
         {
             try
@@ -446,8 +452,8 @@ namespace Motus
                 Console.WriteLine("Entrer un nom de Joueur :");
                 string nomJoueur = Console.ReadLine();
 
-                                                                                                // TODO : verif que le fichier existe
-                                                                                                // if not, créer le fichier + la légende du début
+                                                                                                                                // TODO : verif que le fichier existe
+                                                                                                                                // if not, créer le fichier + la légende du début
 
                 // Création d'une instance de StreamWriter pour permettre l'ecriture de notre fichier cible
                 StreamWriter monStreamWriter = File.AppendText("sauvegarde.txt");
@@ -455,7 +461,7 @@ namespace Motus
                 // On écrit dans le fichier les données de la dernière partie
                 monStreamWriter.WriteLine("{0} ; {1} ; {2} ; {3} ", nomJoueur, partieGagne, motIni, tempsPartie.ToString());
                 
-                // Fermeture du StreamWriter (attention très important) 
+                // Fermeture du StreamWriter
                 monStreamWriter.Close();
             }
             catch (Exception ex)
@@ -468,38 +474,44 @@ namespace Motus
         }
 
 
-        // ------------------------- Quitter le jeu ------------------ //
+        // -------------------------------------------------------------------------------- Quitter le jeu -------------------------------------------------------------------------------- //
         static void QuitterJeu()
         {
+            // Verification que l'utilisateur veut vraiment quitter le jeu
             Console.WriteLine("Voulez-vous vraiment quitter le jeu? O/N");
             string temp = Console.ReadLine();
-            temp = temp.ToUpper();
+
+            temp = temp.ToUpper(); // standardisation de la reponse
+
             if(temp.Equals("O"))
             {
-                Environment.Exit(0);
+                Environment.Exit(0); // ferme la console
             }
             else
             {
-                Menu();
+                AfficherMenu(); // retourne au menu
             }
         }
 
-        // Enleve tous les accents 
-        static string RemoveDiacritics(string text)
-        {
-            var normalizedString = text.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
 
-            foreach (var c in normalizedString)
+        // -------------------------------------------------------------------------------- Manipulations du dico -------------------------------------------------------------------------------- //
+        // Enleve tous les accents d'une chaine de caractere donnee
+        static string SupprimerAccents(string text)
+        {
+            var stringNormaliser = text.Normalize(NormalizationForm.FormD); // standardisation de la chaine
+            var stringConstruit = new StringBuilder();
+
+            // Parcours de la chaine
+            foreach (var c in stringNormaliser) 
             {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c); // obtient la categorie du caractere en Unicode
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark) // NonSpacingMark = caractere qui indique que des modification ont ete apporte a un caractere de base
                 {
-                    stringBuilder.Append(c);
+                    stringConstruit.Append(c); // Ajoute un nombre specifie de copies de la representation sous forme de chaine d'un caractere Unicode a la variable
                 }
             }
 
-            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+            return stringConstruit.ToString().Normalize(NormalizationForm.FormC); // retourne la chaine sans accents
         }
 
 
@@ -522,16 +534,16 @@ namespace Motus
                 {
                     if (mot.Length == tailleMot)              // tous les mots de la taille donnée
                     {
-                        mot = RemoveDiacritics(mot);        //... on convertit le mot sans accent
+                        mot = SupprimerAccents(mot);        //... on convertit le mot sans accent
                         monStreamWriter.WriteLine(mot);   //... on écrit dans le fichier cible
                     }
                         
                     mot = monStreamReader.ReadLine();
 
                 }
-                // Fermeture du StreamReader (attention très important) 
+                // Fermeture du StreamReader
                 monStreamReader.Close();
-                // Fermeture du StreamWriter (attention très important) 
+                // Fermeture du StreamWriter
                 monStreamWriter.Close();
             }
             catch (Exception ex)
