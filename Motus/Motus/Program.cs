@@ -11,6 +11,11 @@ namespace Motus
 {
     class Program
     {
+        // Variables globales de nom de fichiers
+        public static string fichierSource = "dico_fr.txt";
+        public static string fichierCible = "dico_reduit.txt";
+        public static string fichierSauvegarde = "sauvegarde.txt";
+
         static void Main(string[] args)
         {
             // Affichage de début
@@ -20,7 +25,7 @@ namespace Motus
             Console.WriteLine("\nBy Coline BINET et Alban PERRIER G1 1A ENSC");
 
             // Joueur le son du début
-            // JouerUnSon(@"E:\IPROG\Music\generique_intro.wav");
+            //JouerUnSon(@"E:\IPROG\Music\generique_intro.wav");
 
             // MENU 
             AfficherMenu();
@@ -28,6 +33,8 @@ namespace Motus
             Console.ReadKey();
 
         }
+
+
         
         // Affichage du menu et permet d'appeler la fonction correspondant à ce que l'utilisateur choisi
         public static void AfficherMenu()
@@ -35,7 +42,7 @@ namespace Motus
             Console.WriteLine("------------------------------------------");
             Console.WriteLine("                  MENU                    ");
             Console.WriteLine("------------------------------------------");
-            Console.WriteLine("1: Nouvelle partie \n2: Statistiques \n3:Options \n4:Quitter");
+            Console.WriteLine("1: Nouvelle partie \n2: Statistiques \n3: Options \n4: Quitter");
 
             int caseSwitch = int.Parse(Console.ReadLine());
 
@@ -46,7 +53,7 @@ namespace Motus
                     InstancierPartie();
                     break;
                 case 2: // Statistiques
-
+                    AfficherStats();
                     break;
                 case 3: // Options
 
@@ -63,55 +70,48 @@ namespace Motus
         public static void InstancierPartie()
         {
             Console.Clear();
-            string fichierSource = "dico_fr.txt";
-            string fichierCible = "dico_reduit.txt";
+            
+            // Sélection de la difficulté
+            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("                  DIFFICULTE                    ");
+            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("1: Facile \n2: Moyen \n3: Difficile \n4: Personnalise");
 
+            int difficulte = int.Parse(Console.ReadLine());
+
+            // Variables de difficultés a parametrer
             int tailleMot = 0;
-            // Demande de la taille du mot
-            do
-            {
-                Console.WriteLine("Entrer une taille de mot à deviner entre 6 et 10");
-                tailleMot = int.Parse(Console.ReadLine());
-            }
-            while (tailleMot < 6 || tailleMot > 10);
+            int nbTentatives = 0;
+            TimeSpan tempsTour = new TimeSpan();
+            tempsTour = TimeSpan.FromDays(1);
 
+            Random rnd = new Random();
+            // Permet d'appeler fonction permettant de sélectionner la difficulté que l'utilisateur souhaite
+            switch (difficulte)
+            {
+                case 1: // Facile
+                    tailleMot = rnd.Next(6, 7);
+                    nbTentatives = tailleMot;
+                    
+                    break;
+                case 2: // Moyen
+                    tailleMot = rnd.Next(7, 9);
+                    nbTentatives = tailleMot - 2;
+
+                    break;
+                case 3: // Difficile
+                    tailleMot = rnd.Next(8, 10);
+                    nbTentatives = tailleMot - 3;
+
+                    break;
+                case 4: // Personnaliser
+                    PersonnaliserDifficulte(ref tailleMot, ref nbTentatives, ref tempsTour);
+
+                    break;
+            }
+            
             // Création du fichier avec seulement des mots de la taille demandée
             reduireFichier(fichierSource, tailleMot, fichierCible);
-
-
-            // Nb de tentatives = nb de lignes du tableau
-            Console.WriteLine("Entrer le nombre de tentatives autorisées");
-            int nbTentatives = int.Parse(Console.ReadLine());
-
-            // Pour parametrer un temps pour proposer un mot
-            Console.WriteLine("Souhaitez-vous mettre un temps limité pour proposer un mot? O/N");
-            string temp = Console.ReadLine(); // variable temporaire
-            temp = temp.ToUpper(); //Normalisation de la chaine
-
-            TimeSpan tempsTour = new TimeSpan();
-
-            // Cas où on veut un chrono pour chaque proposition de mot
-            if (temp.Equals("O"))
-            {
-                int seconde = 0;
-                do
-                {
-                    Console.WriteLine("Entrer un temps compris entre 5 et 60 secondes : ");
-                    tempsTour = TimeSpan.FromSeconds(int.Parse(Console.ReadLine()));
-
-                    // Creation d'une variable temporaire seconde pour faire une verification avec un int
-                    seconde = tempsTour.Seconds;
-                    Console.WriteLine(tempsTour);
-                }
-                
-                while (seconde < 4 && seconde > 61); // verification de la donnée saisie par l'utilisateur
-            }
-            // Cas où on ne souhaite pas avoir de limite de temps pour proposer un mot
-            else
-            {
-                // .FromDays(1) pour mettre une "limite" de temps a un jour
-                tempsTour = TimeSpan.FromDays(1);
-            }
 
             // création de la grille de jeu
             char[,] grille = new char[nbTentatives, tailleMot];
@@ -129,12 +129,58 @@ namespace Motus
             int [,] grilleCouleur = new int[nbTentatives, tailleMot];
 
             // Appel de la fonction JouerPartie pour débuter une action
-            JouerPartie(grille, tempsTour, fichierCible, grilleCouleur);
+            JouerPartie(grille, tempsTour, fichierCible, grilleCouleur, difficulte);
+
+        }
+        // Fonction qui permet à l'utilisateur de parametrer ses parametres de jeu
+        public static void PersonnaliserDifficulte(ref int tailleMot, ref int nbTentatives, ref TimeSpan tempsTour)
+        {
+            // Demande de la taille du mot
+            do
+            {
+                Console.WriteLine("Entrer une taille de mot à deviner entre 6 et 10");
+                tailleMot = int.Parse(Console.ReadLine());
+            }
+            while (tailleMot < 6 || tailleMot > 10);
+
+            // Nb de tentatives = nb de lignes du tableau
+            Console.WriteLine("Entrer le nombre de tentatives autorisées");
+            nbTentatives = int.Parse(Console.ReadLine());
+
+            // Pour parametrer un temps pour proposer un mot
+            Console.WriteLine("Souhaitez-vous mettre un temps limité pour proposer un mot? O/N");
+            string temp = Console.ReadLine(); // variable temporaire
+            temp = temp.ToUpper(); //Normalisation de la chaine
+
+            tempsTour = new TimeSpan();
+
+            // Cas où on veut un chrono pour chaque proposition de mot
+            if (temp.Equals("O"))
+            {
+                int seconde = 0;
+                do
+                {
+                    Console.WriteLine("Entrer un temps compris entre 5 et 60 secondes : ");
+                    tempsTour = TimeSpan.FromSeconds(int.Parse(Console.ReadLine()));
+
+                    // Creation d'une variable temporaire seconde pour faire une verification avec un int
+                    seconde = tempsTour.Seconds;
+                    Console.WriteLine(tempsTour);
+                }
+
+                while (seconde < 4 && seconde > 61); // verification de la donnée saisie par l'utilisateur
+            }
+            // Cas où on ne souhaite pas avoir de limite de temps pour proposer un mot
+            else
+            {
+                // .FromDays(1) pour mettre une "limite" de temps a un jour
+                tempsTour = TimeSpan.FromDays(1);
+            }
 
         }
 
         // Fonction permettant de créer le mot utilisé pour la partie, initialise le chrono pour la partie et vérifie si la partie est terminée (gagnée ou perdue)
-        public static void JouerPartie(char[,] grille, TimeSpan tempsTour, string fichierCible, int[,] grilleCouleur)
+        public static void JouerPartie(char[,] grille, TimeSpan tempsTour, string fichierCible, int[,] grilleCouleur, int difficulte)
         {
             // Clear de la console pour des raisons esthétiques
             Console.Clear();
@@ -183,7 +229,7 @@ namespace Motus
             TimeSpan ts = tpsTotal.Elapsed;
 
             // Affichage de fin
-            AfficherFinDePartie(partieGagne, motInitial, ts);
+            AfficherFinDePartie(partieGagne, motInitial, ts, difficulte);
             
         }
 
@@ -364,7 +410,7 @@ namespace Motus
         }
 
         // Affichage de fin de partie
-        public static void AfficherFinDePartie(bool partieGagne, string motInitial, TimeSpan ts)
+        public static void AfficherFinDePartie(bool partieGagne, string motInitial, TimeSpan ts, int difficulte)
         {
             // Reset du background pour l'ecriture
             Console.BackgroundColor = ConsoleColor.Black;
@@ -379,13 +425,14 @@ namespace Motus
             {
                 Console.WriteLine("\nTu feras mieux la prochaine fois!");
                 Console.WriteLine("Le mot a deviné était : " + motInitial);
+                JouerUnSon(@"E:\IPROG\Music\aie_coup_dur.wav");
             }
 
             // Affichage du temps de la partie
             AfficherTemps(ts);
 
             // Sauvegarde de la partie
-            Sauvegarder(motInitial, ts, partieGagne);
+            Sauvegarder(motInitial, ts, partieGagne, difficulte);
 
             // Demande de rejouer
             Console.WriteLine("Souhaitez-vous rejouer? O/N");
@@ -397,6 +444,7 @@ namespace Motus
             }
             else
             {
+                Console.Clear();
                 AfficherMenu(); // Retour au menu
             }
 
@@ -440,30 +488,35 @@ namespace Motus
 
         // -------------------------------------------------------------------------------- Statistiques -------------------------------------------------------------------------------- //
 
-        // Génération d'un score avec la longueur du mot, le tps de la partie total, le nb de tentatives,                                  ABANDON // TODOOOOOO
-        public static void GenerationScore()
-        {
-
-        }
-
         // Création d'un fichier de sauvegarde de la partie --> se situe dans /bin/Debug
-        public static void Sauvegarder(string motIni, TimeSpan tempsPartie, bool partieGagne)
+        public static void Sauvegarder(string motIni, TimeSpan tempsPartie, bool partieGagne, int difficulte)
         {
             try
             {
                 // Demande a l'utilisateur d'entrer un nom de sauvegarde pour lui
                 Console.WriteLine("Entrer un nom de Joueur :");
                 string nomJoueur = Console.ReadLine();
+                
+                // Si le fichier n'existe pas déjà
+                if (!File.Exists("sauvegarde.txt"))
+                {
+                    // Création d'une instance de StreamWriter pour créer le fichier
+                    StreamWriter monStreamWriter1 = File.AppendText("sauvegarde.txt");
 
-                                                                                                                                // TODO : verif que le fichier existe
-                                                                                                                                // if not, créer le fichier + la légende du début
+                    // Création d'une première ligne pour l'intitule des donnees
+                    monStreamWriter1.WriteLine("Nom Joueur ; Partie Gagne ; Mot Initial ; Temps ; Difficulte");
+
+                    // Fermeture
+                    monStreamWriter1.Close();
+                }
 
                 // Création d'une instance de StreamWriter pour permettre l'ecriture de notre fichier cible
                 StreamWriter monStreamWriter = File.AppendText("sauvegarde.txt");
                 
                 // On écrit dans le fichier les données de la dernière partie
-                monStreamWriter.WriteLine("{0} ; {1} ; {2} ; {3} ", nomJoueur, partieGagne, motIni, tempsPartie.ToString());
-                
+                monStreamWriter.WriteLine("{0} ; {1} ; {2} ; {3} ; {4} ", nomJoueur, partieGagne, motIni, tempsPartie.ToString(), difficulte);
+
+                Console.WriteLine("Partie sauvergardee !");
                 // Fermeture du StreamWriter
                 monStreamWriter.Close();
             }
@@ -474,6 +527,54 @@ namespace Motus
                 Console.WriteLine(ex.Message);
             }
 
+        }
+
+        // Fonction qui affiche les statistiques
+        public static void AfficherStats()
+        {
+            try
+            {
+                Console.Clear();
+                Console.WriteLine("------------------------------------------");
+                Console.WriteLine("              STATISTIQUES                ");
+                Console.WriteLine("------------------------------------------");
+                // Cas ou le fichier n'existe pas
+                if (!File.Exists("sauvegarde.txt"))
+                {
+                    // Création d'une instance de StreamWriter pour créer le fichier
+                    StreamWriter monStreamWriter1 = File.AppendText("sauvegarde.txt");
+
+                    // Création d'une première ligne pour l'intitule des donnees
+                    monStreamWriter1.WriteLine("Nom Joueur ; Partie Gagne ; Mot Initial ; Temps ; Difficulte");
+
+                    // Fermeture
+                    monStreamWriter1.Close();
+                }
+
+
+                // Création d'une instance de StreamReader pour permettre la lecture
+                System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
+                StreamReader monStreamReader = new StreamReader(fichierSauvegarde, encoding);
+
+                string ligne = monStreamReader.ReadLine(); // ligne = premiere ligne du fichier
+
+                // Lecture de toutes les lignes du fichier
+                while (ligne != null)
+                {
+                    Console.WriteLine(ligne);
+                    ligne = monStreamReader.ReadLine();
+                }
+
+              
+                // Fermeture du StreamReader
+                monStreamReader.Close();
+            }
+            catch (Exception ex)
+            {
+                // Code exécuté en cas d'exception 
+                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.WriteLine(ex.Message);
+            }
         }
 
          // ----------------------------------------------------------------------------------- Options ----------------------------------------------------------------------------------- //
@@ -511,6 +612,7 @@ namespace Motus
             }
             else
             {
+                Console.Clear();
                 AfficherMenu(); // retourne au menu
             }
         }

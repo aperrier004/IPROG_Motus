@@ -1,2 +1,4 @@
-bossat ; True ; BOSSAT ; 00:00:02.4631085 
-decuve ; True ; DECUVE ; 00:00:01.9931632 
+Nom Joueur ; Partie Gagne ; Mot Initial ; Temps ; Difficulte
+Coline ; True ; MUTILA ; 00:00:02.4711454 ; 1 
+Bilou ; True ; GLATIS ; 00:00:03.3320660 ; 1 
+lol ; True ; EVASEZ ; 00:00:02.2754602 ; 1 
