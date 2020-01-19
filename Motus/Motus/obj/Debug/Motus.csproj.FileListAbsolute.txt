@@ -9,4 +9,4 @@ D:\IPROG\Motus\Motus\obj\Debug\Motus.exe
 D:\IPROG\Motus\Motus\obj\Debug\Motus.pdb
 D:\IPROG\Motus\Motus\bin\Debug\Motus.exe
 D:\IPROG\Motus\Motus\bin\Debug\Motus.pdb
-D:\IPROG\Motus\Motus\obj\Debug\Motus.csprojResolveAssemblyReference.cache
+D:\IPROG\Motus\Motus\obj\Debug\Motus.csprojAssemblyReference.cache

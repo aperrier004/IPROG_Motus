@@ -1,123 +1,188 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
+using System.Threading;
 
 namespace Motus
 {
     class Program
     {
-        // Variables globales de nom de fichiers
-        public static string fichierSource = "dico_fr.txt";
-        public static string fichierCible = "dico_reduit.txt";
+        // Variables globales de noms de fichiers
+        public static string fichierDico = @"..\..\Dicos\dico_fr.txt";
+        public static string fichierDicoReduit = "dico_reduit.txt";
         public static string fichierSauvegarde = "sauvegarde.txt";
+        public static bool indiceAleatoire = false;
+        public static Random rnd = new Random();
+        public static bool modeDefi = false;
+        public static System.Diagnostics.Stopwatch tempsModeDefi;
+        public static int nbPartiesGagneesDefi = 0;
 
+        // Main qui affiche un ecran de depart et dirige vers le menu de jeu
         static void Main(string[] args)
         {
             // Affichage de début
-            Console.WriteLine("------------------------------------------");
-            Console.WriteLine("          ~~~ MO-MO-MO-MOTUS ~~~          ");
-            Console.WriteLine("------------------------------------------");
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               ~~~ MO-MO-MO-MOTUS ~~~                                ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
             Console.WriteLine("\nBy Coline BINET et Alban PERRIER G1 1A ENSC");
 
-            // Joueur le son du début
-            //JouerUnSon(@"E:\IPROG\Music\generique_intro.wav");
+            // Joueur le son du début en boucle
+            JouerUnSonEnBoucle("generique_intro");
+
+            Console.WriteLine("\n\n\nAppuyez sur une touche pour commencer !");
+            Console.ReadKey();
 
             // MENU 
             AfficherMenu();
 
             Console.ReadKey();
-
         }
 
-
-        
         // Affichage du menu et permet d'appeler la fonction correspondant à ce que l'utilisateur choisi
         public static void AfficherMenu()
         {
-            Console.WriteLine("------------------------------------------");
-            Console.WriteLine("                  MENU                    ");
-            Console.WriteLine("------------------------------------------");
+            // Affichage
+            Console.Clear();
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               MENU                                                ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
             Console.WriteLine("1: Nouvelle partie \n2: Statistiques \n3: Options \n4: Quitter");
 
-            int caseSwitch = int.Parse(Console.ReadLine());
+            // Verifications de l'entree clavier + Feedback de ce que rentre l'utilisateur
+            int caseSwitch = 0;
+            do
+            {
+                Console.WriteLine("\nSaisir le numero de l'option que vous souhaitez");
+                caseSwitch = int.Parse(Console.ReadLine());
+            }
+            while (caseSwitch > 4 || caseSwitch < 0);
 
-            // Permet d'appeler fonction permettant de réaliser l'action que l'utilisateur souhaite
+            // Permet d'appeler la fonction permettant de réaliser l'action que l'utilisateur souhaite
             switch (caseSwitch)
             {
                 case 1: // Nouvelle Partie
-                    InstancierPartie();
+                    ParametrerPartie();
                     break;
                 case 2: // Statistiques
                     AfficherStats();
                     break;
                 case 3: // Options
-
+                    AfficherOptions();
                     break;
                 case 4: // Quitter
                     QuitterJeu();
-
                     break;
             }
         }
 
-        // ---------------------------------------------------------------------------------- Nouvelle Partie---------------------------------------------------------------------------------- //
+        // ---------------------------------------------------------------------------------------- Nouvelle Partie---------------------------------------------------------------------------------- //
         // Initialise la partie en donnant le nom des dicos utilisés et demandant à l'utilisateur les paramètres de jeu pour la partie
-        public static void InstancierPartie()
+        public static void ParametrerPartie()
         {
             Console.Clear();
-            
-            // Sélection de la difficulté
-            Console.WriteLine("------------------------------------------");
-            Console.WriteLine("                  DIFFICULTE                    ");
-            Console.WriteLine("------------------------------------------");
-            Console.WriteLine("1: Facile \n2: Moyen \n3: Difficile \n4: Personnalise");
+            ArreterUnSon();
 
-            int difficulte = int.Parse(Console.ReadLine());
+            // Affichage des regles
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               REGLES                                                ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("Le jeu Motus repose sur la recherche de mots d'un nombre fixe de lettres.");
+            Console.WriteLine("Le mot doit etre present dans le dictionnaire du jeu et ");
+            Console.WriteLine("Chaque lettre du mot encore a trouver correspond a un \".\" dans la grille de jeu");
+
+            // Sélection de la difficulté
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               DIFFICULTE                                            ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("1: Facile \n2: Moyen \n3: Difficile \n4: Personnalise \n5: Mode Defi");
+            Console.WriteLine("\nFacile : Mot de 6 ou 7 lettres avec un nombre de tentatives egale a la taille du mot");
+            Console.WriteLine("Moyen : Mot entre 7 et 9 lettres avec un nombre de tentatives egale a la taille du mot moins 2");
+            Console.WriteLine("Moyen : Mot entre 8 et 10 lettres avec un nombre de tentatives egale a la taille du mot moins 3");
+            Console.WriteLine("Personnalise : Cela vous permet de choisir vous meme les parametres du jeu");
+            Console.WriteLine("Mode Defi : Trouver un maximum de mots dans le temps imparti : 5 minutes");
+
+            // Verification de l'entrees clavier + Feedback de ce que rentre l'utilisateur
+            int difficulte = 0;
+            do
+            {
+                Console.WriteLine("\nSaisir la difficulte que vous souhaitez");
+                difficulte = int.Parse(Console.ReadLine());
+            }
+            while (difficulte > 5 || difficulte < 0);
 
             // Variables de difficultés a parametrer
             int tailleMot = 0;
             int nbTentatives = 0;
-            TimeSpan tempsTour = new TimeSpan();
-            tempsTour = TimeSpan.FromDays(1);
+            TimeSpan dureeTour = new TimeSpan();
+            dureeTour = TimeSpan.FromDays(1);
 
-            Random rnd = new Random();
+            char[,] grille;
+            int[,] grilleCouleur;
+
             // Permet d'appeler fonction permettant de sélectionner la difficulté que l'utilisateur souhaite
             switch (difficulte)
             {
                 case 1: // Facile
                     tailleMot = rnd.Next(6, 7);
                     nbTentatives = tailleMot;
-                    
+                    //on instancie les différents paramètres de la partie
+                    InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
+
                     break;
                 case 2: // Moyen
                     tailleMot = rnd.Next(7, 9);
                     nbTentatives = tailleMot - 2;
+                    //on instancie les différents paramètres de la partie
+                    InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
 
                     break;
                 case 3: // Difficile
                     tailleMot = rnd.Next(8, 10);
                     nbTentatives = tailleMot - 3;
+                    //on instancie les différents paramètres de la partie
+                    InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
 
                     break;
-                case 4: // Personnaliser
-                    PersonnaliserDifficulte(ref tailleMot, ref nbTentatives, ref tempsTour);
+                case 4: // Personnalise
+                    PersonnaliserDifficulte(ref tailleMot, ref nbTentatives, ref dureeTour);
 
+                    //on instancie les différents paramètres de la partie
+                    InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
+                    break;
+
+                case 5: // Mode defi
+                    nbTentatives = rnd.Next(3, 10);
+                    tailleMot = rnd.Next(6, 10);
+                    TimeSpan dureeMode = new TimeSpan();
+                    dureeMode = TimeSpan.FromMinutes(5);
+                    InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
+                    ModeDefi(grille, dureeMode, grilleCouleur, difficulte);
                     break;
             }
-            
+
+
+
+            //on instancie les différents paramètres de la partie
+            InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
+
+            // Appel de la fonction JouerPartie pour débuter une action
+            JouerPartie(grille, dureeTour, grilleCouleur, difficulte);
+
+        }
+
+
+        //fonction initialisation de la partie
+        public static void InitialiserPartie(int tailleMot, int nbTentatives, out char[,] grille, out int[,] grilleCouleur)
+        {
             // Création du fichier avec seulement des mots de la taille demandée
-            reduireFichier(fichierSource, tailleMot, fichierCible);
+            reduireFichier(tailleMot);
 
             // création de la grille de jeu
-            char[,] grille = new char[nbTentatives, tailleMot];
+            grille = new char[nbTentatives, tailleMot];
 
-            // Remplit la grille de caractères '.' pour la verification des cases, correspondant à des cases encore "vide" pour le jeu
-            for(int i = 0; i < grille.GetLength(0); i++)
+            // Remplit la grille de caractères '.' pour la verification des cases, correspondant à des cases encore "vides" pour le jeu
+            for (int i = 0; i < grille.GetLength(0); i++)
             {
                 for (int j = 0; j < grille.GetLength(1); j++)
                 {
@@ -126,41 +191,38 @@ namespace Motus
             }
 
             // grille pour connaitre la couleur a afficher selon la validité de la lettre
-            int [,] grilleCouleur = new int[nbTentatives, tailleMot];
-
-            // Appel de la fonction JouerPartie pour débuter une action
-            JouerPartie(grille, tempsTour, fichierCible, grilleCouleur, difficulte);
-
+            grilleCouleur = new int[nbTentatives, tailleMot];
         }
+
         // Fonction qui permet à l'utilisateur de parametrer ses parametres de jeu
         public static void PersonnaliserDifficulte(ref int tailleMot, ref int nbTentatives, ref TimeSpan tempsTour)
         {
-            // Demande de la taille du mot
+            // Demande de la taille du mot + Verification
             do
             {
-                Console.WriteLine("Entrer une taille de mot à deviner entre 6 et 10");
+                Console.WriteLine("\nEntrer une taille de mot à deviner entre 6 et 10");
                 tailleMot = int.Parse(Console.ReadLine());
             }
             while (tailleMot < 6 || tailleMot > 10);
 
             // Nb de tentatives = nb de lignes du tableau
-            Console.WriteLine("Entrer le nombre de tentatives autorisées");
+            Console.WriteLine("\nEntrer le nombre de tentatives autorisées");
             nbTentatives = int.Parse(Console.ReadLine());
 
             // Pour parametrer un temps pour proposer un mot
-            Console.WriteLine("Souhaitez-vous mettre un temps limité pour proposer un mot? O/N");
-            string temp = Console.ReadLine(); // variable temporaire
-            temp = temp.ToUpper(); //Normalisation de la chaine
+            Console.WriteLine("\nSouhaitez-vous mettre un temps limité pour proposer un mot? O/N");
+            string chrono = Console.ReadLine(); 
+            chrono = chrono.ToUpper(); //Normalisation de la chaine
 
             tempsTour = new TimeSpan();
 
             // Cas où on veut un chrono pour chaque proposition de mot
-            if (temp.Equals("O"))
+            if (chrono.Equals("O"))
             {
                 int seconde = 0;
                 do
                 {
-                    Console.WriteLine("Entrer un temps compris entre 5 et 60 secondes : ");
+                    Console.WriteLine("\nEntrer un temps compris entre 5 et 60 secondes : ");
                     tempsTour = TimeSpan.FromSeconds(int.Parse(Console.ReadLine()));
 
                     // Creation d'une variable temporaire seconde pour faire une verification avec un int
@@ -179,24 +241,78 @@ namespace Motus
 
         }
 
+        
+        // fonction pour lancer le mode Defi
+        public static void ModeDefi(char[,] grille, TimeSpan dureeMode, int[,] grilleCouleur, int difficulte)
+        {
+            modeDefi = true;
+            // on lance le chrono pour le debut du mode defi
+            tempsModeDefi = new System.Diagnostics.Stopwatch();
+            tempsModeDefi.Start();
+            //debut de la partie
+
+
+            JouerPartie(grille, dureeMode, grilleCouleur, difficulte);
+
+
+            tempsModeDefi.Stop();
+            TimeSpan ts = tempsModeDefi.Elapsed;
+
+        }
+
+        //fonction pour initialiser une nouvelle partie ( = recherche de mot ) du mode defi + compteur mots
+        public static void CreerPartieDefi()
+        {
+
+            char[,] grille;
+            int[,] grilleCouleur;
+
+            int nbTentatives = rnd.Next(3, 10);
+            int tailleMot = rnd.Next(6, 10);
+            InitialiserPartie(tailleMot, nbTentatives, out grille, out grilleCouleur);
+
+
+
+            /*TimeSpan tempsModeDefiSpan = tempsModeDefi.Elapsed;
+            string tempsEcoule = FormaterTemps(tempsModeDefiSpan);
+            Console.WriteLine("Il vous reste {0}. \nVous avez trouvé {1}mot(s) sur {2}.",);*/
+        }
+
+
+
         // Fonction permettant de créer le mot utilisé pour la partie, initialise le chrono pour la partie et vérifie si la partie est terminée (gagnée ou perdue)
-        public static void JouerPartie(char[,] grille, TimeSpan tempsTour, string fichierCible, int[,] grilleCouleur, int difficulte)
+        public static void JouerPartie(char[,] grille, TimeSpan dureeTour, int[,] grilleCouleur, int difficulte)
         {
             // Clear de la console pour des raisons esthétiques
             Console.Clear();
 
-            //Générer le mot random du dico
-            string motInitial = GenererMotAleatoire(fichierCible);
+            //Génère le mot random du dico reduit
+            string motInitial = GenererMotAleatoire(fichierDicoReduit);
             Console.WriteLine(motInitial);
 
-            // Ajout de la lettre connue (première lettre) du mot a la grille sur la 1ère ligne
-            grille[0, 0] = motInitial[0];
-            grilleCouleur[0, 0] = 1;
+
+            // on verifie si l'indice est aléatoire ou non
+            if(indiceAleatoire)
+            {
+                //on determine la position de l'indice aleatoirement
+                int positionIndice = rnd.Next(0, grille.GetLength(0));
+                grille[0, positionIndice] = motInitial[positionIndice];
+                grilleCouleur[0, positionIndice] = 1;
+
+            }
+            else
+            {
+                // Ajout de la lettre connue (première lettre) du mot a la grille sur la 1ère ligne
+                grille[0, 0] = motInitial[0];
+                grilleCouleur[0, 0] = 1;
+            }
+
+            
 
             //Affichage de la grille pour débuter la partie
             AfficherGrille(grille, grilleCouleur);
 
-            // Variable pour vérifier si la partie est terminée et/ou gagnée
+            // Variable pour vérifier si la partie est terminee et/ou gagnée
             bool finPartie = false;
             bool partieGagne = false;
 
@@ -204,23 +320,26 @@ namespace Motus
             System.Diagnostics.Stopwatch tpsTotal = new System.Diagnostics.Stopwatch();
             tpsTotal.Start();
 
-            // Boucle qui va permettre de jouer un tour tant que la partie n'est pas terminée
+
+
+
+            // Boucle qui va permettre de jouer un tour tant que la partie n'est pas terminee
             while (!finPartie)
             {
                 // Appel à la fonction JouerTour pour savoir si la partie est gagnée ou pas
-                partieGagne = JouerTour(grille, tempsTour, grilleCouleur, motInitial);
+                partieGagne = JouerTour(grille, dureeTour, grilleCouleur, motInitial);
 
                 // Si la partie est gagnée
                 if(partieGagne)
                 {
                     finPartie = partieGagne; // Alors la partie est terminée
                 }
-                // Sinon, on vérifie si le nombre de tentatives autorisées n'est pas dépassées
+                // Sinon, on vérifie si le nombre de tentatives autorisées n'est pas dépassée
                 else if(!grille[grille.GetLength(0)-1, 2].Equals('.'))
                 {
                     finPartie = true; // Si oui, la partie est aussi terminée
                 }
-                // Affichage de la grille après avoir jouer un tour = proposer un mot
+                // Affichage de la grille après avoir joue un tour = proposer un mot
                 AfficherGrille(grille, grilleCouleur);
             }
 
@@ -229,34 +348,68 @@ namespace Motus
             TimeSpan ts = tpsTotal.Elapsed;
 
             // Affichage de fin
-            AfficherFinDePartie(partieGagne, motInitial, ts, difficulte);
+                AfficherFinDePartie(partieGagne, motInitial, ts, difficulte);
+
+           
             
         }
 
         // Fonction pour jouer un tour = proposer un mot + le vérifier
-        public static bool JouerTour(char[,] grille, TimeSpan tempsTour, int[,] grilleCouleur, string motInitial)
+        public static bool JouerTour(char[,] grille, TimeSpan dureeTour, int[,] grilleCouleur, string motInitial)
         {
             string motPropose = "";
             int tourActuel = 0;
 
             // Début du chrono pour proposer un mot
-            System.Diagnostics.Stopwatch tpsTour = new System.Diagnostics.Stopwatch();
+            System.Diagnostics.Stopwatch tpsTour;
+            if (modeDefi)
+            {
+                // on donne la valeur ecoulee depuis le debut du mode defi a la tpsTour
+                tpsTour = tempsModeDefi;
+            }
+            else
+            {
+                tpsTour = new System.Diagnostics.Stopwatch();
+            }
             tpsTour.Start();
 
-            // Demande du mot en vérifiant qu'il soit correct à ce que l'on attends
-            while (motPropose.Length != grille.GetLength(1))
+            // Demande du mot en vérifiant qu'il soit correct ( longueur demandee + mot existant dans le dico reduit )
+            bool motExistant = false;
+            bool longueur = false;
+            
+            // Verification de l'entree clavier + Feedback de ce qu'entre l'utilisateur comme mot
+            while (!longueur || !motExistant)
             {
                 Console.WriteLine("\nEntrer votre proposition de mot");
                 motPropose = Console.ReadLine();
-                motPropose = motPropose.ToUpper();
-            }
+                motPropose = motPropose.ToUpper(); // Normalisation de la chaine
+            
+                // Si le mot fait la bonne longueur
+                if (motPropose.Length == grille.GetLength(1)) 
+                {
+                    longueur = true;
+                    //alors on verifie qu'il existe dans le dico reduit
+                    motExistant = VerifierMotDansDico(motPropose);
 
-            // Arret du chronomètre pour la propostion du mot
+                    // Si le mot n'existe pas, on previent qu'il y a une erreur
+                    if (!motExistant)
+                    {
+                        Console.WriteLine("Le mot n'existe pas dans le dictionnaire français.");
+                    }
+                }
+                // Mauvaise longueur de mot
+                else if(!longueur)
+                {
+                    Console.WriteLine("Le mot ne fait pas la bonne taille");
+                }
+            }
+            
+            // Arret du chronomètre pour la proposition du mot
             tpsTour.Stop();
             TimeSpan ts = tpsTour.Elapsed;
 
             // Cas ou le temps mis pour proposer un mot a dépassé celui parametré
-            if(ts.Seconds >= tempsTour.Seconds && tempsTour.Seconds != 0)
+            if(ts.Seconds >= dureeTour.Seconds && dureeTour.Seconds != 0)
             {
                 Console.WriteLine("Temps imparti dépassé, votre proposition n'a pas été retenue");
                 // reset du motPropose
@@ -274,7 +427,7 @@ namespace Motus
             {
                 if (grille[tourActuel, 2].Equals('.'))
                 {
-                    break;
+                    break; // Permet d'arreter directement la boucle 
                 }
             }
 
@@ -283,67 +436,115 @@ namespace Motus
             {
                     grille[tourActuel, i] = motPropose[i];
             }
-
-            // On retourne le résultat (boolean) de la fonction VerifierMot qui determinera si le mot proposer est le bon ou nom
+            
+            // On retourne le resultat (boolean) de la fonction VerifierMot qui determinera si le mot propose est le bon ou non
             return VerifierMot(motInitial, motPropose, tourActuel, grilleCouleur);
         }
 
-        // Vérifie si le mot entré correspond au mot initial + remplis la grilleCouleur selon l'exactitude du mot propose
+        // Vérifie si le mot entre correspond au mot initial + remplit la grilleCouleur selon l'exactitude du mot propose
         public static bool VerifierMot(string motInitial, string motPropose, int tourActuel, int [,] grilleCouleur)
         {
             bool gagne = false;
-
-            // Vérifie si le mot est parfaitement égal
+            
+            // Verifie si le mot est parfaitement égal
             if (motInitial.Equals(motPropose))
             {
+                JouerUnSon("motus_mot_trouve");
+
                 // mettre grille couleur a 1 = toutes les lettres sont bonnes
                 for (int i = 0; i < grilleCouleur.GetLength(1); i++)
                 {
                     grilleCouleur[tourActuel, i] = 1;
-                    
                 }
                 gagne = true;
             }
             
             else
             {
-                // Parcours la grille de couleur
+                // Parcourt la grille de couleurs
                 for (int i = 0; i < grilleCouleur.GetLength(1); i++)
                 {
                     // Vérifie si des lettres sont bien placées
                     if (motPropose[i].Equals(motInitial[i]))
                     {
+                        JouerUnSon("rouge");
+                        Thread.Sleep(350);
+
                         grilleCouleur[tourActuel, i] = 1; // remplit à 1 (= lettre bien placée) si la lettre où l'on se situe est bien placee
                     }
-                    // Vérifie si une lettre est mal placée, mais présente dans le mot initial 
+                    // Vérifie si une lettre est mal placee, mais presente dans le mot initial 
                     else
                     {
                         int j = i;
                         bool bonneLettre = false;
+
                         // Parcours du mot propose tant qu'on ne trouve pas de lettre presente dans le mot initial
                         while((!bonneLettre) && (j < grilleCouleur.GetLength(1)))
                         {
                             // lettre présente
                             if (motPropose[i].Equals(motInitial[j]))
                             {
-                                grilleCouleur[tourActuel, i] = 2; // remplit la grille couleur à cette position pour indiquer que la lettre est présente mais mal placee
+                                JouerUnSon("jaune");
+                                Thread.Sleep(350);
+
+                                grilleCouleur[tourActuel, i] = 2; // remplit la grille couleurs à cette position pour indiquer que la lettre est présente mais mal placee
                                 bonneLettre = true;
                             }
                             j++;
                         }
-                            
                     }
-                    // Lettres pas présente
+                    // Lettres pas présentes
                     if (grilleCouleur[tourActuel, i] == 0)
                     {
+                        JouerUnSon("bleu");
+                        Thread.Sleep(350);
+
                         grilleCouleur[tourActuel, i] = -1; // remplissage de la grille Couleur à cette position pour indiquer que la lettre n'est pas présente
                     }
                 }
+            }
+            return gagne; // Retourne la valeur de la variable gagne qui est mise a "true" dans le cas ou toutes les lettres du mot propose sont bien placees
+            
+        }
 
+        // Vérifie si le mot entré existe dans le Dictionnaire
+        public static bool VerifierMotDansDico(string motPropose)
+        {
+            bool motExistant = false;
+
+            try
+            {
+                // Création d'une instance de StreamReader pour permettre la lecture de notre fichier  
+                System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
+                StreamReader monStreamReader = new StreamReader(fichierDicoReduit, encoding);
+                
+                string mot = monStreamReader.ReadLine();
+
+                // Lecture de tous les mots du fichier
+                while (mot != null)
+                {
+                    // Si le mot de la ligne a laquelle on se situe est le meme que celui propose
+                    if (mot.Equals(motPropose.ToUpper()))            
+                    {
+                        // Fermeture du StreamReader et renvoi "true" pour signifier que le mot existe bel et bien
+                        monStreamReader.Close();
+                        return true;
+                    }
+                    mot = monStreamReader.ReadLine(); // on passe au mot suivant
+                }
+
+                // Fermeture du StreamReader
+                monStreamReader.Close();
+            }
+            catch (Exception ex)
+            {
+                // Code exécuté en cas d'exception 
+                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.WriteLine(ex.Message);
             }
 
-            return gagne; // Retourne la valeur de la variable gagne qui est mise a "true" dans le cas ou toutes les lettres du mot propose sont bonnes
-            
+            //return false : le mot n'a pas ete trouve dans le dictionnaire
+            return motExistant;
         }
 
         // Retourne un mot aléatoire du dico reduit (et donc ne contenant que des mots de x lettres choisies par l'utilisateur)
@@ -354,17 +555,13 @@ namespace Motus
             {
                 // Création d'une instance de StreamReader pour permettre la lecture de notre fichier cible 
                 System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
-                //Premier reader
                 StreamReader monStreamReader = new StreamReader(fichierCible, encoding);
-                //Deuxieme reader
-                StreamReader monStreamReader2 = new StreamReader(fichierCible, encoding);
-
                 mot = monStreamReader.ReadLine();
                 
 
                 int nbMots = 0;
                 
-                // Parcours pour connaitre le nb de mots du fichier
+                // Parcourt le fichier pour connaitre le nb de mots du fichier
                 while (mot != null)
                 {
                     mot = monStreamReader.ReadLine();
@@ -372,8 +569,11 @@ namespace Motus
                     nbMots++;
                 }
 
+                //close puis ouvre le sreamreader pour revenir en debut de fichier
+                monStreamReader.Close();
+
+                monStreamReader = new StreamReader(fichierCible, encoding);
                 // Choix d'un nombre aléatoire entre 1 et le nb de mots du fichiers
-                Random rnd = new Random();
                 int random = rnd.Next(1, nbMots);
                 
                 
@@ -382,13 +582,12 @@ namespace Motus
                 // Parcours du dico pour trouver le mot correspondant a la ligne aléatoire "choisie"
                 while (nbMots != random)
                 {
-                    mot = monStreamReader2.ReadLine();
+                    mot = monStreamReader.ReadLine();
                     nbMots++;
                 }
                 
                 // Fermeture du StreamReader 
                 monStreamReader.Close();
-                monStreamReader2.Close();
 
 
             }
@@ -399,14 +598,14 @@ namespace Motus
                 Console.WriteLine(ex.Message);
             }
 
-            return mot.ToUpper(); // retourne le mot choisie en majuscule (pour l'affichage et la standardisation)
+            return mot.ToUpper(); // retourne le mot choisi en majuscules (pour l'affichage et la standardisation)
         }
 
-        // Affichage du temps
-        public static void AfficherTemps(TimeSpan ts)
+        // Formatage en String des variables de type TimeSpan
+        public static string  FormaterTemps(TimeSpan ts)
         {
-            string tempsEcoule = String.Format("{0:00}:{1:00}:{2:00}:{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10); // permet de changer le format pour standardiser l'affichage
-            Console.WriteLine("Temps de jeu : " + tempsEcoule);
+            string tempsEcoule = String.Format("{0:00}min et {1:00}s",ts.Minutes, ts.Seconds); // permet de changer le format pour standardiser l'affichage en ne prenant en compte que minutes et secondes
+            return tempsEcoule;
         }
 
         // Affichage de fin de partie
@@ -419,40 +618,62 @@ namespace Motus
             if (partieGagne)
             {
                 Console.WriteLine("\nBravo, vous avez gagné la partie!");
-                JouerUnSon(@"E:\IPROG\Music\motus_mot_trouve.wav");
+
+                JouerUnSon("motus_mot_trouve");
             }
             else // Défaite
             {
                 Console.WriteLine("\nTu feras mieux la prochaine fois!");
                 Console.WriteLine("Le mot a deviné était : " + motInitial);
-                JouerUnSon(@"E:\IPROG\Music\aie_coup_dur.wav");
+
+                JouerUnSon("aie_coup_dur");
             }
 
             // Affichage du temps de la partie
-            AfficherTemps(ts);
+            string tempsEcoule = FormaterTemps(ts);
+            Console.WriteLine("\nTemps de jeu : " + tempsEcoule);
 
             // Sauvegarde de la partie
             Sauvegarder(motInitial, ts, partieGagne, difficulte);
 
-            // Demande de rejouer
-            Console.WriteLine("Souhaitez-vous rejouer? O/N");
-            string rejouer = Console.ReadLine();
 
-            if (rejouer.Equals("O"))
+
+            if(modeDefi)
             {
-                InstancierPartie(); // Appel de InstancerPartie() pour recommencer
+                //si on est en mode defi, on incremente le score et on relance automatiquement
+                nbPartiesGagneesDefi++;
+                CreerPartieDefi();
             }
             else
             {
-                Console.Clear();
-                AfficherMenu(); // Retour au menu
+                // Demande de rejouer
+                Console.WriteLine("\nSouhaitez-vous rejouer? O/N");
+                string rejouer = Console.ReadLine();
+
+                if (rejouer.ToUpper().Equals("O"))
+                {
+                    ParametrerPartie(); // Appel de InstancerPartie() pour recommencer
+                }
+                else
+                {
+                    AfficherMenu(); // Retour au menu
+                }
             }
+           
 
         }
 
-        // Affichage de la grille 
+        // Affichage de la grille + légende des couleurs
         public static void AfficherGrille(char[,] grille, int[,] grilleCouleur)
         {
+            // Affichage de la legende de la grille
+            Console.WriteLine("\n\n---------------------------------------------------");
+            Console.WriteLine("                      LEGENDE                      ");
+            Console.WriteLine("---------------------------------------------------");
+            Console.WriteLine("ROUGE : Lettre bien placee");
+            Console.WriteLine("JAUNE : Lettre presente dans le mot mais mal placee");
+            Console.WriteLine("BLEU : Lettre non presente dans le mot");
+
             // Parcours du contenu du tableau grille
             for (int i = 0; i < grille.GetLength(0); i++)
             {
@@ -461,7 +682,7 @@ namespace Motus
                 {
                     int caseSwitch = grilleCouleur[i,j];
 
-                    // Pour colorier la case selon les précedentes (ou pas) propositions de mots
+                    // Pour colorier la case selon les precedentes (ou pas) propositions de mots
                     switch (caseSwitch)
                     {
                         case 1: // lettre bien placée = rouge
@@ -479,23 +700,27 @@ namespace Motus
                     }
                     
                     Console.Write(grille[i, j] );
-
                 }
-
+                Console.Write("\n");
             }
-          
         }
 
-        // -------------------------------------------------------------------------------- Statistiques -------------------------------------------------------------------------------- //
+        // ---------------------------------------------------------------------------------------------- Statistiques -------------------------------------------------------------------------------- //
 
         // Création d'un fichier de sauvegarde de la partie --> se situe dans /bin/Debug
         public static void Sauvegarder(string motIni, TimeSpan tempsPartie, bool partieGagne, int difficulte)
         {
             try
             {
-                // Demande a l'utilisateur d'entrer un nom de sauvegarde pour lui
-                Console.WriteLine("Entrer un nom de Joueur :");
-                string nomJoueur = Console.ReadLine();
+                // Demande a l'utilisateur d'entrer un nom de sauvegarde pour lui associer les statistiques de la partie
+                string nomJoueur = "";
+                do
+                {
+                    Console.WriteLine("\nEntrer un nom de Joueur (12 caracteres max.):");
+                    nomJoueur = Console.ReadLine();
+                }
+                while (nomJoueur.Length < 2 || nomJoueur.Length > 12); // Feedback tant que le nom n'est pas de la longueur souhaitee
+                
                 
                 // Si le fichier n'existe pas déjà
                 if (!File.Exists("sauvegarde.txt"))
@@ -504,7 +729,7 @@ namespace Motus
                     StreamWriter monStreamWriter1 = File.AppendText("sauvegarde.txt");
 
                     // Création d'une première ligne pour l'intitule des donnees
-                    monStreamWriter1.WriteLine("Nom Joueur ; Partie Gagne ; Mot Initial ; Temps ; Difficulte");
+                    monStreamWriter1.WriteLine("{0,-20}{1,-20}{2,-20}{3,-20}{4,-20} \n", "Nom Joueur",  "Partie Gagne",  "Mot Initial",  "Temps",  "Difficulte");
 
                     // Fermeture
                     monStreamWriter1.Close();
@@ -512,18 +737,24 @@ namespace Motus
 
                 // Création d'une instance de StreamWriter pour permettre l'ecriture de notre fichier cible
                 StreamWriter monStreamWriter = File.AppendText("sauvegarde.txt");
-                
-                // On écrit dans le fichier les données de la dernière partie
-                monStreamWriter.WriteLine("{0} ; {1} ; {2} ; {3} ; {4} ", nomJoueur, partieGagne, motIni, tempsPartie.ToString(), difficulte);
 
-                Console.WriteLine("Partie sauvergardee !");
+                // On écrit dans le fichier les données de la dernière partie
+                string tempsTexte = FormaterTemps(tempsPartie);
+
+
+                monStreamWriter.WriteLine("{0,-20}{1,-20}{2,-20}{3,-20}{4,-20}", nomJoueur, partieGagne, motIni, tempsTexte, difficulte);
+
+
+                Console.WriteLine("\nPartie sauvergardee !"); // Feedback
+                Thread.Sleep(700);
+
                 // Fermeture du StreamWriter
                 monStreamWriter.Close();
             }
             catch (Exception ex)
             {
                 // Code exécuté en cas d'exception 
-                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.Write("\nUne erreur est survenue au cours de l'opération :");
                 Console.WriteLine(ex.Message);
             }
 
@@ -535,73 +766,254 @@ namespace Motus
             try
             {
                 Console.Clear();
-                Console.WriteLine("------------------------------------------");
-                Console.WriteLine("              STATISTIQUES                ");
-                Console.WriteLine("------------------------------------------");
+                ArreterUnSon();
+
+                Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+                Console.WriteLine("                                               STATISTIQUES                                             ");
+                Console.WriteLine("-----------------------------------------------------------------------------------------------------");
+
+                Console.WriteLine("<--  Appuyez sur une touche pour revenir au menu \n\n\n");
+                
                 // Cas ou le fichier n'existe pas
                 if (!File.Exists("sauvegarde.txt"))
                 {
-                    // Création d'une instance de StreamWriter pour créer le fichier
-                    StreamWriter monStreamWriter1 = File.AppendText("sauvegarde.txt");
-
-                    // Création d'une première ligne pour l'intitule des donnees
-                    monStreamWriter1.WriteLine("Nom Joueur ; Partie Gagne ; Mot Initial ; Temps ; Difficulte");
-
-                    // Fermeture
-                    monStreamWriter1.Close();
+                    Console.WriteLine("\nAucune partie n'a encore ete jouee");
                 }
-
-
-                // Création d'une instance de StreamReader pour permettre la lecture
-                System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
-                StreamReader monStreamReader = new StreamReader(fichierSauvegarde, encoding);
-
-                string ligne = monStreamReader.ReadLine(); // ligne = premiere ligne du fichier
-
-                // Lecture de toutes les lignes du fichier
-                while (ligne != null)
+                else
                 {
-                    Console.WriteLine(ligne);
-                    ligne = monStreamReader.ReadLine();
-                }
+                    // Création d'une instance de StreamReader pour permettre la lecture
+                    System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
+                    StreamReader monStreamReader = new StreamReader(fichierSauvegarde, encoding);
 
-              
-                // Fermeture du StreamReader
-                monStreamReader.Close();
+                    string ligne = monStreamReader.ReadLine(); // ligne = premiere ligne du fichier
+
+                    // Lecture de toutes les lignes du fichier
+                    while (ligne != null)
+                    {
+                        Console.WriteLine(ligne);
+                        ligne = monStreamReader.ReadLine();
+                    }
+
+                    // Fermeture du StreamReader
+                    monStreamReader.Close();
+                }               
             }
             catch (Exception ex)
             {
                 // Code exécuté en cas d'exception 
-                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.Write("\nUne erreur est survenue au cours de l'opération :");
                 Console.WriteLine(ex.Message);
+            }
+
+            Console.ReadKey();
+            AfficherMenu(); // Retour au menu des qu'une touche a ete appuye
+        }
+
+        // ------------------------------------------------------------------------------------------------- Options ----------------------------------------------------------------------------------- //
+        // Permet de jouer un son avec seulement le nom
+        public static void JouerUnSon(string nomSon)
+        {
+            nomSon = @"..\..\..\Music\" + nomSon + ".wav"; // Permet de rajouter le chemin relatif et l'extension du fichier pour le trouver
+
+            // Verification que le fichier existe bien
+            if (File.Exists(nomSon))
+            {
+                // Creation de l'objet SoundPlayer
+                System.Media.SoundPlayer s = new System.Media.SoundPlayer();
+
+                // Pour donner la localisation du fichier son 
+                s.SoundLocation = nomSon;
+                // Joue le son
+                s.Play();
             }
         }
 
-         // ----------------------------------------------------------------------------------- Options ----------------------------------------------------------------------------------- //
-         public static void JouerUnSon(string chemin)
+        // Permet de joueur un son en boucle
+        public static void JouerUnSonEnBoucle(string nomSon)
+        {
+            nomSon = @"..\..\..\Music\" + nomSon + ".wav"; // Permet de rajouter le chemin relatif et l'extension du fichier pour le trouver
+            // Verification que le fichier existe bien
+            if (File.Exists(nomSon))
+            {
+                // Creation de l'objet SoundPlayer
+                System.Media.SoundPlayer s = new System.Media.SoundPlayer();
+
+                // Pour donner la localisation du fichier son 
+                s.SoundLocation = nomSon;
+
+                // Joue le son en boucle
+                s.PlayLooping();
+            }
+        }
+
+        // Permet d'arreter le son qui est en cours
+        public static void ArreterUnSon()
         {
             // Creation de l'objet SoundPlayer
             System.Media.SoundPlayer s = new System.Media.SoundPlayer();
 
-            // Pour donner la localisation du fichier son 
-            s.SoundLocation = chemin;
+            s.Stop();
+        }
 
-            // Play looping
-            // s.PlayLooping();
+        // Fonction qui affiche les options
+        public static void AfficherOptions()  // ---------------- TODO : menu des options a refaire ?
+        {
+            // Affichage
+            Console.Clear();
+            ArreterUnSon();
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               OPTIONS                                               ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("\n1: Reinitialiser les donnees du jeu \n2: Modifier la position de l'indice \n3: Changer de dictionnaire \n\n4: <-- Retour au menu");
 
-            // Play normal
-            s.Play();
 
-            // Stop 
-            // s.Stop();
+            // Verification + Feedback de ce que l'utilisateur rentre
+            int caseSwitch=0;
+
+            while(caseSwitch !=4)
+            {
+                do
+                {
+                    Console.WriteLine("\nSaisir le numero de l'option que vous souhaitez");
+                    caseSwitch = int.Parse(Console.ReadLine());
+                }
+                while (caseSwitch > 4 || caseSwitch < 0);
+
+                // Permet d'appeler la fonction permettant de réaliser l'action que l'utilisateur souhaite
+                switch (caseSwitch)
+                {
+                    case 1: // Reset sauvegarde
+                        ResetFichier(fichierSauvegarde);
+                        break;
+                    case 2: // modifier indice 
+                        ModifierIndice();
+                        break;
+                    case 3: // Change de dico    
+                        ModifierDico();
+                        break;
+                    case 4: // Retour au menu
+                        AfficherMenu();
+                        break;
+                }
+            }
+            
+        }
+        
+        // Fonction pour modifier la position de l'indice
+        public static void ModifierIndice()
+            {
+                if(indiceAleatoire)
+                {
+                    Console.WriteLine("\nPour vous aider, une lettre est révélée au hasard dans le mot. \nSouhaitez vous que l'indice soit la première lettre ? O/N");
+                    string temp = Console.ReadLine();
+
+                    temp = temp.ToUpper(); // standardisation de la reponse
+
+                    if (temp.Equals("O"))
+                    {
+                        indiceAleatoire = false; // l'indice sera la premiere lettre
+                    }
+                    else
+                    {
+                        indiceAleatoire = true; // l'indice reste aleatoire
+                    }
+            
+                }
+
+                else
+                {
+                    Console.WriteLine("\nPour vous aider, la première lettre est révélée. \nSouhaitez vous que l'indice soit aléatoire ? O/N");
+                    string temp = Console.ReadLine();
+
+                    temp = temp.ToUpper(); // standardisation de la reponse
+
+                    if (temp.Equals("O"))
+                    {
+                        indiceAleatoire = true; // l'indice sera  aleatoire
+                    }
+                    else
+                    {
+                        indiceAleatoire = false; // l'indice reste la premiere lettre
+                    }
+                }
+
+                Console.WriteLine("\nLa modification a été prise en compte.");
+
+
+          }
+
+        // Fonction qui modifie le dictionnaire avec lequel on joue
+        public static void ModifierDico()
+        {
+            string nomDico = "";
+
+            // Verification + Feedback de ce que l'utilisateur rentre
+            int caseSwitch = 0;
+            do
+            {
+                Console.WriteLine("\nSaisir le numero associé au dictionnaire avec lequel vous souhaitez jouer");
+                Console.WriteLine("\n1: Animaux \n2: Couleurs \n3: Metiers \n4: Noel \n5: Par défaut");
+                caseSwitch = int.Parse(Console.ReadLine());
+            }
+            while (caseSwitch > 5 || caseSwitch < 0);
+
+            // Permet d'appeler la fonction permettant de réaliser l'action que l'utilisateur souhaite
+            switch (caseSwitch)
+            {
+                case 1: // Animaux
+                    nomDico = "dico_animaux";
+                    break;
+                case 2: // Couleurs
+                    nomDico = "dico_couleurs";
+                    break;
+                case 3: // Metiers
+                    nomDico = "dico_metiers";
+                    break;
+                case 4: // Noel
+                    nomDico = "dico_noel";
+                    break;
+                case 5: // Dico par défaut fr
+                    nomDico = "dico_fr";
+                    break;
+            }
+
+            // Creation du chemin relatif pour trouver les dictionnaires correspondants
+            string chemin = @"..\..\..\Dicos\" + nomDico + ".txt";
+            // On assigne le nouveau chemin de dico a la variable globable fichierDico
+            fichierDico = chemin;
+        }
+
+        // Fonction qui permet de reinitialiser les donnees sauvegardees
+        public static void ResetFichier(string fichier)
+        {
+            // On verifie si le fichier existe ou pas
+            if(File.Exists(fichier))
+            {
+                File.Delete(fichier); // On supprime le fichier
+                Console.WriteLine(fichier + " a ete supprime");
+
+            }
+            else
+            {
+                Console.WriteLine(fichier + " n'existe pas, il ne peut pas etre supprime");
+            }
 
         }
 
-        // -------------------------------------------------------------------------------- Quitter le jeu -------------------------------------------------------------------------------- //
+        
+        // -------------------------------------------------------------------------------------------- Quitter le jeu -------------------------------------------------------------------------------- //
+        // Fonction qui permet de quitter le Jeu (= fermer la console)
         static void QuitterJeu()
         {
+            // Affichage
+            Console.Clear();
+            ArreterUnSon();
+            Console.WriteLine("\n-----------------------------------------------------------------------------------------------------");
+            Console.WriteLine("                                               QUITTER                                               ");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------");
+
             // Verification que l'utilisateur veut vraiment quitter le jeu
-            Console.WriteLine("Voulez-vous vraiment quitter le jeu? O/N");
+            Console.WriteLine("\nVoulez-vous vraiment quitter le jeu? O/N");
             string temp = Console.ReadLine();
 
             temp = temp.ToUpper(); // standardisation de la reponse
@@ -612,48 +1024,45 @@ namespace Motus
             }
             else
             {
-                Console.Clear();
                 AfficherMenu(); // retourne au menu
             }
         }
 
 
-        // -------------------------------------------------------------------------------- Manipulations du dico -------------------------------------------------------------------------------- //
+        // ------------------------------------------------------------------------------------------ Manipulations du dico -------------------------------------------------------------------------------- //
         // Enleve tous les accents d'une chaine de caractere donnee
         static string SupprimerAccents(string text)
         {
             var stringNormaliser = text.Normalize(NormalizationForm.FormD); // standardisation de la chaine
             var stringConstruit = new StringBuilder();
 
-            // Parcours de la chaine
+            // Parcourt de la chaine
             foreach (var c in stringNormaliser) 
             {
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c); // obtient la categorie du caractere en Unicode
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark) // NonSpacingMark = caractere qui indique que des modification ont ete apporte a un caractere de base
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark) // NonSpacingMark = caractere qui indique que des modification ont ete apportees a un caractere de base
                 {
                     stringConstruit.Append(c); // Ajoute un nombre specifie de copies de la representation sous forme de chaine d'un caractere Unicode a la variable
                 }
             }
-
             return stringConstruit.ToString().Normalize(NormalizationForm.FormC); // retourne la chaine sans accents
         }
-
-
+        
         // Création du dico correspondant au nb de lettres souhaité
-        public static void reduireFichier(string fichier_source, int tailleMot, string fichier_cible)
+        public static void reduireFichier(int tailleMot)
         {
             try
             {
                 // Création d'une instance de StreamReader pour permettre la lecture de notre fichier source 
                 System.Text.Encoding encoding = System.Text.Encoding.GetEncoding("iso-8859-1");
-                StreamReader monStreamReader = new StreamReader(fichier_source, encoding);
+                StreamReader monStreamReader = new StreamReader(fichierDico, encoding);
 
                 // Création d'une instance de StreamWriter pour permettre l'ecriture de notre fichier cible
-                StreamWriter monStreamWriter = File.CreateText(fichier_cible);
+                StreamWriter monStreamWriter = File.CreateText(fichierDicoReduit);
                 
                 string mot = monStreamReader.ReadLine();
 
-                // Lecture de tous les mots du fichier (un par lignes) 
+                // Lecture de tous les mots du fichier (un par ligne) 
                 while (mot != null)
                 {
                     if (mot.Length == tailleMot)              // tous les mots de la taille donnée
@@ -673,12 +1082,10 @@ namespace Motus
             catch (Exception ex)
             {
                 // Code exécuté en cas d'exception 
-                Console.Write("Une erreur est survenue au cours de l'opération :");
+                Console.Write("\nUne erreur est survenue au cours de l'opération :");
                 Console.WriteLine(ex.Message);
             }
         }
-
-
-
+        
     }
 }
