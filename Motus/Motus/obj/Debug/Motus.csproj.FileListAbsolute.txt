@@ -4,9 +4,9 @@ E:\IPROG\Motus\Motus\bin\Debug\Motus.pdb
 E:\IPROG\Motus\Motus\obj\Debug\Motus.exe
 E:\IPROG\Motus\Motus\obj\Debug\Motus.pdb
 E:\IPROG\Motus\Motus\obj\Debug\Motus.csprojResolveAssemblyReference.cache
-D:\IPROG\Motus\Motus\bin\Debug\Motus.exe.config
-D:\IPROG\Motus\Motus\obj\Debug\Motus.exe
-D:\IPROG\Motus\Motus\obj\Debug\Motus.pdb
-D:\IPROG\Motus\Motus\bin\Debug\Motus.exe
-D:\IPROG\Motus\Motus\bin\Debug\Motus.pdb
-D:\IPROG\Motus\Motus\obj\Debug\Motus.csprojAssemblyReference.cache
+F:\IPROG\Motus\Motus\bin\Debug\Motus.exe.config
+F:\IPROG\Motus\Motus\bin\Debug\Motus.exe
+F:\IPROG\Motus\Motus\bin\Debug\Motus.pdb
+F:\IPROG\Motus\Motus\obj\Debug\Motus.csprojAssemblyReference.cache
+F:\IPROG\Motus\Motus\obj\Debug\Motus.exe
+F:\IPROG\Motus\Motus\obj\Debug\Motus.pdb

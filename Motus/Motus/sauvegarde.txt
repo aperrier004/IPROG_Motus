@@ -1,0 +1,4 @@
+Nom Joueur          Partie Gagne        Mot Initial         Temps               Difficulte           
+
+bestPlayer          True                HUMAIS              01min et 41s        1                   
+test                False               ANORDI              04min et 33s        1                   

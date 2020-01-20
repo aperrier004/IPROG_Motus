@@ -1,22 +1,26 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29709.97
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Motus", "Motus\Motus.csproj", "{721D00C4-696B-40B5-A457-8B751C0D3405}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Music", "Music", "{DADD7C2E-EEEF-49E9-96B8-97BE44F1C703}"
 	ProjectSection(SolutionItems) = preProject
 		Music\aie_coup_dur.wav = Music\aie_coup_dur.wav
+		Music\bleu.wav = Music\bleu.wav
 		Music\cest_non.wav = Music\cest_non.wav
 		Music\generique_intro.wav = Music\generique_intro.wav
+		Music\jaune.wav = Music\jaune.wav
 		Music\motus_mot_trouve.wav = Music\motus_mot_trouve.wav
+		Music\rouge.wav = Music\rouge.wav
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dicos", "Dicos", "{DA2ABE9D-8DF8-4E3C-8E76-252B3D305728}"
 	ProjectSection(SolutionItems) = preProject
 		..\..\Dicos\dico_animaux.txt = ..\..\Dicos\dico_animaux.txt
 		..\..\Dicos\dico_couleurs.txt = ..\..\Dicos\dico_couleurs.txt
+		Dicos\dico_fr.txt = Dicos\dico_fr.txt
 		..\..\Dicos\dico_metiers.txt = ..\..\Dicos\dico_metiers.txt
 		..\..\Dicos\dico_noel.txt = ..\..\Dicos\dico_noel.txt
 	EndProjectSection
